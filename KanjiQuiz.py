@@ -135,12 +135,14 @@ class QuizApp:
 
             new_kanji = kanji_entry.get()
             new_meaning = meaning_entry.get()
-            if new_kanji and new_meaning:
-                self.quiz_data[selected_category][quiz_index] = {'kanji': new_kanji, 'meaning': new_meaning}
+            new_romaji = romaji_entry.get()
+            if new_kanji and new_meaning and new_romaji:
+                self.quiz_data[selected_category][quiz_index] = {'kanji': new_kanji, 'romaji': new_romaji, 'meaning': new_meaning}
                 self.save_quiz_data()
                 edit_quiz_window.destroy()
             else:
-                messagebox.showerror('Errore', 'Inserisci sia il kanji che il significato.')
+                messagebox.showerror('Errore', 'Inserisci il kanji, il romaji e il significato.')
+
 
         kanji_label = tk.Label(edit_quiz_window, text='Kanji:', font=('Arial', 14))
         kanji_label.pack()
