@@ -148,6 +148,12 @@ class QuizApp:
         kanji_entry = tk.Entry(edit_quiz_window, font=('Arial', 14))
         kanji_entry.pack()
 
+        romaji_label = tk.Label(edit_quiz_window, text='Romaji:', font=('Arial', 14))
+        romaji_label.pack(pady=10)
+
+        romaji_entry = tk.Entry(edit_quiz_window, font=('Arial', 14))
+        romaji_entry.pack(pady=10)
+        
         meaning_label = tk.Label(edit_quiz_window, text='Significato:', font=('Arial', 14))
         meaning_label.pack()
 
@@ -210,7 +216,7 @@ class QuizApp:
 
                 # Aggiungi nuove righe
                 for quiz in quizzes:
-                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning'], quiz['category']])
+                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning']])
 
             wb.save(DATA_FILE)
 
