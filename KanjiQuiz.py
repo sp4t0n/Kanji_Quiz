@@ -218,7 +218,7 @@ class QuizApp:
 
                 # Aggiungi nuove righe
                 for quiz in quizzes:
-                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning']])
+                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning'], quiz['category']])
 
             wb.save(DATA_FILE)
 
