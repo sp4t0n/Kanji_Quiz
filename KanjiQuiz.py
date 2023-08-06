@@ -183,9 +183,10 @@ class QuizApp:
                         self.selected_categories.append(sheet)
                         self.quiz_data[sheet] = []
                         for row in wb[sheet].values:
-                            kanji, romaji, meaning, category = row
-                            if kanji and meaning:
+                            kanji, romaji, meaning, category = (row + (None, None, None, None))[:4]
+                            if romaji or meaning:
                                 self.quiz_data[sheet].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category})
+
         except Exception as e:
             messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
 
@@ -339,7 +340,7 @@ class QuizApp:
             kanji = kanji_entry.get()
             meaning = meaning_entry.get()
             romaji = romaji_entry.get()
-            if kanji and meaning:
+            if romaji or meaning:
                 self.quiz_data[selected_category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': selected_category})
                 self.save_quiz_data()
                 add_quiz_window.destroy()
