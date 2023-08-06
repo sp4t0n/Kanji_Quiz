@@ -178,25 +178,20 @@ class QuizApp:
             else:
                 wb = load_workbook(DATA_FILE)
                 for sheet in wb.sheetnames:
-                    if sheet != 'Generale':
-                        self.quiz_categories.append(sheet)
-                        self.selected_categories.append(sheet)
+                    if sheet not in self.quiz_data:
                         self.quiz_data[sheet] = []
-                        for row in wb[sheet].values:
-                            kanji, romaji, meaning, category = (row + (None, None, None, None))[:4]
-                            if romaji or meaning:
-                                self.quiz_data[sheet].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category})
-            if not self.current_category in self.quiz_data:
-                if "Generale" not in self.quiz_data:
-                    self.quiz_data["Generale"] = []
-                self.quiz_data["Generale"].append(self.current_quiz)
-            else:
-                self.quiz_data[self.current_category].append(self.current_quiz)
-
+                    if sheet != 'Generale' and sheet not in self.quiz_categories:
+                        self.quiz_categories.append(sheet)
+                    for row in wb[sheet].values:
+                        kanji, romaji, meaning, category = (row + (None, None, None, None))[:4]
+                        if romaji or meaning:
+                            if not category:
+                                category = "Generale"
+                            self.quiz_data[sheet].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category})
+            self.category_var.set(self.quiz_categories)
         except Exception as e:
             messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
 
-        self.category_var.set(self.quiz_categories)
 
 
 
@@ -374,3 +369,4 @@ if __name__ == "__main__":
     style = Style(theme="cyborg")
     QuizApp(root)
     root.mainloop()
+
