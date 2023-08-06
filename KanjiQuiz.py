@@ -172,27 +172,25 @@ class QuizApp:
             if not os.path.isfile(DATA_FILE):
                 wb = Workbook()
                 ws = wb.active
-                ws.title = 'Generale'
+                ws.title = 'Data'
                 wb.save(DATA_FILE)
                 self.quiz_data['Generale'] = []
             else:
                 wb = load_workbook(DATA_FILE)
-                for sheet in wb.sheetnames:
-                    if sheet not in self.quiz_data:
-                        self.quiz_data[sheet] = []
-                    if sheet != 'Generale' and sheet not in self.quiz_categories:
-                        self.quiz_categories.append(sheet)
-                    for row in wb[sheet].values:
-                        kanji, romaji, meaning, category = (row + (None, None, None, None))[:4]
-                        if romaji or meaning:
-                            if not category:
-                                category = "Generale"
-                            if category not in self.quiz_data:
-                                self.quiz_data[category] = []
-                            self.quiz_data[category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category})
+                ws = wb.active
+                for row in ws.values:
+                    kanji, romaji, meaning, category = (row + (None, None, None, None))[:4]
+                    if not category or category == "Categoria":
+                        category = "Generale"
+                    if category not in self.quiz_data:
+                        self.quiz_data[category] = []
+                        self.quiz_categories.append(category)
+                    if romaji or meaning:
+                        self.quiz_data[category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category})
             self.category_var.set(self.quiz_categories)
         except Exception as e:
             messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
+
 
 
 
@@ -372,4 +370,3 @@ if __name__ == "__main__":
     style = Style(theme="cyborg")
     QuizApp(root)
     root.mainloop()
-
