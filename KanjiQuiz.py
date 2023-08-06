@@ -186,6 +186,12 @@ class QuizApp:
                             kanji, romaji, meaning, category = (row + (None, None, None, None))[:4]
                             if romaji or meaning:
                                 self.quiz_data[sheet].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category})
+            if not self.current_category in self.quiz_data:
+                if "Generale" not in self.quiz_data:
+                    self.quiz_data["Generale"] = []
+                self.quiz_data["Generale"].append(self.current_quiz)
+            else:
+                self.quiz_data[self.current_category].append(self.current_quiz)
 
         except Exception as e:
             messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
