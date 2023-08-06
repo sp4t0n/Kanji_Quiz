@@ -274,7 +274,11 @@ class QuizApp:
             messagebox.showerror('Errore', 'Inserisci una risposta.')
             return
 
-        correct_answer = self.current_quiz['kanji' if self.quiz_direction == 'meaning to kanji' else 'meaning']
+        if self.quiz_direction == 'meaning to kanji':
+            correct_answer = self.current_quiz['kanji'] if self.current_quiz['kanji'] else self.current_quiz['romaji']
+        else:
+            correct_answer = self.current_quiz['meaning']
+
         if user_answer.lower() == correct_answer.lower():
             self.score += 1
         else:
@@ -285,6 +289,7 @@ class QuizApp:
         self.answer_entry.delete(0, tk.END)
         self.next_button['state'] = tk.NORMAL
         self.submit_button['state'] = tk.DISABLED
+
 
     def load_quiz(self, event):
         selected_categories = [self.quiz_categories[i] for i in self.category_listbox.curselection()]
@@ -297,12 +302,19 @@ class QuizApp:
         if next_quiz is not None:
             self.current_quiz = next_quiz
             if self.quiz_direction == 'kanji to meaning':
-                self.question_label['text'] = f"Qual è il significato di questo kanji: {next_quiz['kanji']} ({next_quiz['romaji']})?"
+                if next_quiz['kanji']:
+                    self.question_label['text'] = f"Quale è il significato di questo kanji: {next_quiz['kanji']} ({next_quiz['romaji']})?"
+                else:
+                    self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}?"
             else:
-                self.question_label['text'] = f"Quale kanji rappresenta questo significato: {next_quiz['meaning']}?"
+                if next_quiz['kanji']:
+                    self.question_label['text'] = f"Quale kanji rappresenta questo significato: {next_quiz['meaning']}?"
+                else:
+                    self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}?"
 
             self.next_button['state'] = tk.DISABLED
             self.submit_button['state'] = tk.NORMAL
+
 
 
 
