@@ -73,12 +73,15 @@ class QuizApp:
     def open_add_category_window(self):
         category = simpledialog.askstring("Aggiungi Categoria", "Inserisci il nome della categoria:")
         if category:
-            self.quiz_categories.append(category)
-            self.category_listbox.insert(tk.END, category)
-            self.selected_categories.append(category)
-            self.quiz_data[category] = []
-            messagebox.showinfo('Categoria Aggiunta', 'La categoria è stata aggiunta con successo!')
-            self.save_quiz_data()
+            if category not in self.quiz_categories:
+                self.quiz_categories.append(category)
+                self.category_listbox.insert(tk.END, category)
+                self.quiz_data[category] = []
+                messagebox.showinfo('Categoria Aggiunta', 'La categoria è stata aggiunta con successo!')
+                self.save_quiz_data()
+            else:
+                messagebox.showerror('Errore', 'La categoria esiste già.')
+
 
     def open_edit_category_window(self):
         selected_index = self.category_listbox.curselection()
@@ -90,11 +93,15 @@ class QuizApp:
         old_category_name = self.quiz_categories[category_index]
         new_category_name = simpledialog.askstring("Modifica Categoria", f"Modifica il nome della categoria '{old_category_name}':")
         if new_category_name:
-            self.quiz_categories[category_index] = new_category_name
-            self.category_listbox.delete(category_index)
-            self.category_listbox.insert(category_index, new_category_name)
-            self.quiz_data[new_category_name] = self.quiz_data.pop(old_category_name)  # Rinomina la chiave nel dizionario
-            self.save_quiz_data()
+            if new_category_name not in self.quiz_categories:
+                self.quiz_categories[category_index] = new_category_name
+                self.category_listbox.delete(category_index)
+                self.category_listbox.insert(category_index, new_category_name)
+                self.quiz_data[new_category_name] = self.quiz_data.pop(old_category_name)  # Rinomina la chiave nel dizionario
+                self.save_quiz_data()
+            else:
+                messagebox.showerror('Errore', 'La categoria esiste già.')
+
 
     def open_edit_quiz_window(self):
         selected_index = self.category_listbox.curselection()
@@ -111,7 +118,7 @@ class QuizApp:
         edit_quiz_window = tk.Toplevel(self.root)
         edit_quiz_window.title('Modifica Quiz')
 
-        quiz_listbox = tk.Listbox(edit_quiz_window, font=('Arial', 12))
+        quiz_listbox = tk.Listbox(edit_quiz_window, font=('Arial', 12), width=50)
         quiz_listbox.pack(pady=10)
 
         for quiz in self.quiz_data[selected_category]:
@@ -169,8 +176,8 @@ class QuizApp:
                         self.quiz_data[sheet] = []
                         for row in wb[sheet].values:
                             kanji, meaning = row
-                            if kanji and meaning:  # Controlla se i dati sono validi
-                                self.quiz_data[sheet].append({'kanji': kanji, 'meaning': meaning})
+                            if kanji and meaning:
+                                self.quiz_data[sheet].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category})
         except Exception as e:
             messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
 
@@ -203,7 +210,7 @@ class QuizApp:
 
                 # Aggiungi nuove righe
                 for quiz in quizzes:
-                    ws.append([quiz['kanji'], quiz['meaning']])
+                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning'], quiz['category']])
 
             wb.save(DATA_FILE)
 
@@ -259,7 +266,7 @@ class QuizApp:
             return
 
         correct_answer = self.current_quiz['kanji' if self.quiz_direction == 'meaning to kanji' else 'meaning']
-        if user_answer == correct_answer:
+        if user_answer.lower() == correct_answer.lower():
             self.score += 1
         else:
             messagebox.showinfo('Risposta Sbagliata', f"La risposta corretta era: {correct_answer}")
@@ -281,7 +288,7 @@ class QuizApp:
         if next_quiz is not None:
             self.current_quiz = next_quiz
             if self.quiz_direction == 'kanji to meaning':
-                self.question_label['text'] = f"Qual è il significato di questo kanji: {next_quiz['kanji']}?"
+                self.question_label['text'] = f"Qual è il significato di questo kanji: {next_quiz['kanji']} ({next_quiz['romaji']})?"
             else:
                 self.question_label['text'] = f"Quale kanji rappresenta questo significato: {next_quiz['meaning']}?"
 
@@ -308,6 +315,12 @@ class QuizApp:
         kanji_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
         kanji_entry.pack()
 
+        romaji_label = tk.Label(add_quiz_window, text='Romaji:', font=('Arial', 14))
+        romaji_label.pack()
+
+        romaji_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
+        romaji_entry.pack()
+
         meaning_label = tk.Label(add_quiz_window, text='Significato:', font=('Arial', 14))
         meaning_label.pack()
 
@@ -317,8 +330,9 @@ class QuizApp:
         def add_quiz():
             kanji = kanji_entry.get()
             meaning = meaning_entry.get()
+            romaji = romaji_entry.get()
             if kanji and meaning:
-                self.quiz_data[selected_category].append({'kanji': kanji, 'meaning': meaning})
+                self.quiz_data[selected_category].append({'kanji': kanji, 'meaning': meaning, 'romaji': romaji})
                 self.save_quiz_data()
                 add_quiz_window.destroy()
             else:
