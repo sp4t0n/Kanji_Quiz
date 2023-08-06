@@ -183,7 +183,7 @@ class QuizApp:
                         self.selected_categories.append(sheet)
                         self.quiz_data[sheet] = []
                         for row in wb[sheet].values:
-                            kanji, meaning = row
+                            kanji, romaji, meaning, category = row
                             if kanji and meaning:
                                 self.quiz_data[sheet].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category})
         except Exception as e:
@@ -340,7 +340,7 @@ class QuizApp:
             meaning = meaning_entry.get()
             romaji = romaji_entry.get()
             if kanji and meaning:
-                self.quiz_data[selected_category].append({'kanji': kanji, 'meaning': meaning, 'romaji': romaji})
+                self.quiz_data[selected_category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': selected_category})
                 self.save_quiz_data()
                 add_quiz_window.destroy()
             else:
