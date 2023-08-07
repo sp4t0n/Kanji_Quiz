@@ -136,7 +136,7 @@ class QuizApp:
 
             new_kanji = kanji_entry.get()
             new_meaning = meaning_entry.get()
-            new_romaji = romaji_entry.get()
+            new_romaji = romaji_entry.get() 
             new_type = type_entry.get().lower()
             if new_type not in ['a', 'v']:
                 new_type = None
@@ -183,13 +183,26 @@ class QuizApp:
                 wb = Workbook()
                 ws = wb.active
                 ws.title = 'Data'
+
+                ws['A1'] = 'Kanji'
+                ws['B1'] = 'Romanji'
+                ws['C1'] = 'Significato'
+                ws['D1'] = 'Categoria'
+                ws['E1'] = 'Tipo (Verbo v /Aggettivo a)'
+
+                for column in ['A', 'B', 'C', 'D', 'E']:
+                    ws.column_dimensions[column].width = 30
+
                 wb.save(DATA_FILE)
                 self.quiz_data['Generale'] = []
             else:
                 wb = load_workbook(DATA_FILE)
                 ws = wb.active
-                for row in ws.values:
-                    kanji, romaji, meaning, category, quiz_type = (row + (None, None, None, None, None))[:5]
+                for row in ws.iter_rows(min_row=2):
+                    kanji, romaji, meaning, category, quiz_type = (row[0].value, row[1].value, row[2].value, row[3].value, row[4].value)
+                    if quiz_type:
+                        quiz_type = quiz_type.lower()
+                        row[4].value = quiz_type  # Aggiorna il valore nel file Excel
                     if not category or category == "Categoria":
                         category = "Generale"
                     if category not in self.quiz_data:
@@ -197,9 +210,15 @@ class QuizApp:
                         self.quiz_categories.append(category)
                     if romaji or meaning:
                         self.quiz_data[category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category, 'type': quiz_type})
-            self.category_var.set(self.quiz_categories)
+
+                # Salva le modifiche nel file Excel
+                wb.save(DATA_FILE)
+
+                # Aggiorna la variabile della categoria
+                self.category_var.set(self.quiz_categories)                
         except Exception as e:
             messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
+
 
 
     def save_quiz_data(self):
