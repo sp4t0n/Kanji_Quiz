@@ -179,14 +179,14 @@ class QuizApp:
                 wb = load_workbook(DATA_FILE)
                 ws = wb.active
                 for row in ws.values:
-                    kanji, romaji, meaning, category = (row + (None, None, None, None))[:4]
+                    kanji, romaji, meaning, category, quiz_type = (row + (None, None, None, None, None))[:5]
                     if not category or category == "Categoria":
                         category = "Generale"
                     if category not in self.quiz_data:
                         self.quiz_data[category] = []
                         self.quiz_categories.append(category)
                     if romaji or meaning:
-                        self.quiz_data[category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category})
+                        self.quiz_data[category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category, 'type': quiz_type})
             self.category_var.set(self.quiz_categories)
         except Exception as e:
             messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
@@ -217,7 +217,7 @@ class QuizApp:
 
                 # Aggiungi nuove righe
                 for quiz in quizzes:
-                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning'], quiz['category']])
+                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning'], quiz['category'], quiz['type']])
 
             wb.save(DATA_FILE)
 
@@ -300,16 +300,22 @@ class QuizApp:
         next_quiz = self.next_random_quiz()
         if next_quiz is not None:
             self.current_quiz = next_quiz
+            type_suffix = ""
+            if next_quiz.get('type') == 'a':
+                type_suffix = " (aggettivo)"
+            elif next_quiz.get('type') == 'v':
+                type_suffix = " (verbo)"
+
             if self.quiz_direction == 'kanji to meaning':
                 if next_quiz['kanji']:
-                    self.question_label['text'] = f"Quale è il significato di questo kanji: {next_quiz['kanji']} ({next_quiz['romaji']})?"
+                    self.question_label['text'] = f"Quale è il significato di questo kanji: {next_quiz['kanji']} ({next_quiz['romaji']}){type_suffix}?"
                 else:
-                    self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}?"
+                    self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}{type_suffix}?"
             else:
                 if next_quiz['kanji']:
                     self.question_label['text'] = f"Quale kanji rappresenta questo significato: {next_quiz['meaning']}?"
                 else:
-                    self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}?"
+                    self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}{type_suffix}?"
 
             self.next_button['state'] = tk.DISABLED
             self.submit_button['state'] = tk.NORMAL
@@ -347,12 +353,21 @@ class QuizApp:
         meaning_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
         meaning_entry.pack()
 
+        type_label = tk.Label(add_quiz_window, text='Tipo (a/v):', font=('Arial', 14))
+        type_label.pack()
+
+        type_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
+        type_entry.pack()
+
         def add_quiz():
             kanji = kanji_entry.get()
             meaning = meaning_entry.get()
             romaji = romaji_entry.get()
+            quiz_type = type_entry.get().lower()
+            if quiz_type not in ['a', 'v']:
+                quiz_type = None
             if romaji or meaning:
-                self.quiz_data[selected_category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': selected_category})
+                self.quiz_data[selected_category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': selected_category, 'type': quiz_type})
                 self.save_quiz_data()
                 add_quiz_window.destroy()
             else:
@@ -360,6 +375,7 @@ class QuizApp:
 
         add_button = tk.Button(add_quiz_window, text='Aggiungi', font=('Arial', 14), command=add_quiz)
         add_button.pack(pady=10)
+
 
 
 if __name__ == "__main__":
