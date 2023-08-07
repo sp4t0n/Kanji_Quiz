@@ -123,7 +123,7 @@ class QuizApp:
         quiz_listbox.pack(pady=10)
 
         for quiz in self.quiz_data[selected_category]:
-            quiz_listbox.insert(tk.END, f"{quiz['kanji']} | {quiz['meaning']}")
+            quiz_listbox.insert(tk.END, f"{quiz['kanji']} | {quiz['romaji']} | {quiz['meaning']} | {quiz['type']}")
 
         def update_quiz():
             selected_quiz_index = quiz_listbox.curselection()
@@ -137,13 +137,16 @@ class QuizApp:
             new_kanji = kanji_entry.get()
             new_meaning = meaning_entry.get()
             new_romaji = romaji_entry.get()
+            new_type = type_entry.get().lower()
+            if new_type not in ['a', 'v']:
+                new_type = None
+
             if new_kanji and new_meaning and new_romaji:
-                self.quiz_data[selected_category][quiz_index] = {'kanji': new_kanji, 'romaji': new_romaji, 'meaning': new_meaning}
+                self.quiz_data[selected_category][quiz_index] = {'kanji': new_kanji, 'romaji': new_romaji, 'meaning': new_meaning, 'type': new_type}
                 self.save_quiz_data()
                 edit_quiz_window.destroy()
             else:
                 messagebox.showerror('Errore', 'Inserisci il kanji, il romaji e il significato.')
-
 
         kanji_label = tk.Label(edit_quiz_window, text='Kanji:', font=('Arial', 14))
         kanji_label.pack()
@@ -156,15 +159,22 @@ class QuizApp:
 
         romaji_entry = tk.Entry(edit_quiz_window, font=('Arial', 14))
         romaji_entry.pack(pady=10)
-        
+
         meaning_label = tk.Label(edit_quiz_window, text='Significato:', font=('Arial', 14))
         meaning_label.pack()
 
         meaning_entry = tk.Entry(edit_quiz_window, font=('Arial', 14))
         meaning_entry.pack()
 
+        type_label = tk.Label(edit_quiz_window, text='Tipo (a/v) Aggettivo o Verbo:', font=('Arial', 14))
+        type_label.pack(pady=5)
+
+        type_entry = tk.Entry(edit_quiz_window, font=('Arial', 14))
+        type_entry.pack(pady=5)
+
         edit_button = tk.Button(edit_quiz_window, text='Modifica', font=('Arial', 14), command=update_quiz)
         edit_button.pack(pady=10)
+
 
 
     def load_quiz_data(self):
@@ -350,7 +360,7 @@ class QuizApp:
         meaning_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
         meaning_entry.pack(pady=5)
 
-        type_label = tk.Label(add_quiz_window, text='Tipo (a/v):', font=('Arial', 14))
+        type_label = tk.Label(add_quiz_window, text='Tipo (a/v) Aggettivo o Verbo:', font=('Arial', 14))
         type_label.pack(pady=5)
 
         type_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
