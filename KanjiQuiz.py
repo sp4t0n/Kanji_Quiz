@@ -98,6 +98,7 @@ class QuizApp:
                 self.category_listbox.delete(category_index)
                 self.category_listbox.insert(category_index, new_category_name)
                 self.quiz_data[new_category_name] = self.quiz_data.pop(old_category_name)  # Rinomina la chiave nel dizionario
+                self.quiz_categories = list(self.quiz_data.keys())
                 self.save_quiz_data()
             else:
                 messagebox.showerror('Errore', 'La categoria esiste già.')
@@ -166,7 +167,6 @@ class QuizApp:
         edit_button.pack(pady=10)
 
 
-
     def load_quiz_data(self):
         try:
             if not os.path.isfile(DATA_FILE):
@@ -190,10 +190,6 @@ class QuizApp:
             self.category_var.set(self.quiz_categories)
         except Exception as e:
             messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
-
-
-
-
 
 
     def save_quiz_data(self):
@@ -227,7 +223,8 @@ class QuizApp:
 
         except PermissionError:
             messagebox.showerror("Errore di salvataggio", "Impossibile salvare i dati del quiz. "
-                                                          "Assicurati che il file non sia aperto in un altro programma e riprova.")
+                                                          "Assicurati che il file non sia aperto in un altro programma e riprova."
+                                                          "Se il problema persiste, assicurati che il file non sia in uso da un altro programma.")
         except Exception as e:
             messagebox.showerror("Errore di salvataggio", f"Si è verificato un errore durante il salvataggio dei dati del quiz: {str(e)}")
 
