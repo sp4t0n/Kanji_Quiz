@@ -320,61 +320,62 @@ class QuizApp:
             self.next_button['state'] = tk.DISABLED
             self.submit_button['state'] = tk.NORMAL
 
-
-
-
-    def open_add_quiz_window(self):
-        selected_index = self.category_listbox.curselection()
+    def open_edit_quiz_window(self):
+        selected_index = self.quiz_listbox.curselection()
         if not selected_index:
-            messagebox.showerror('Errore', 'Seleziona una categoria per aggiungere un quiz.')
+            messagebox.showerror('Errore', 'Seleziona un quiz da modificare.')
             return
 
-        category_index = selected_index[0]
-        selected_category = self.quiz_categories[category_index]
+        quiz_index = selected_index[0]
+        selected_quiz = self.current_quiz_list[quiz_index]
 
-        add_quiz_window = tk.Toplevel(self.root)
-        add_quiz_window.title('Aggiungi Quiz')
+        edit_quiz_window = tk.Toplevel(self.root)
+        edit_quiz_window.title('Modifica Quiz')
 
-        kanji_label = tk.Label(add_quiz_window, text='Kanji:', font=('Arial', 14))
+        kanji_label = tk.Label(edit_quiz_window, text='Kanji:', font=('Arial', 14))
         kanji_label.pack()
 
-        kanji_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
+        kanji_entry = tk.Entry(edit_quiz_window, font=('Arial', 14))
+        kanji_entry.insert(0, selected_quiz['kanji'])
         kanji_entry.pack()
 
-        romaji_label = tk.Label(add_quiz_window, text='Romaji:', font=('Arial', 14))
+        romaji_label = tk.Label(edit_quiz_window, text='Romaji:', font=('Arial', 14))
         romaji_label.pack()
 
-        romaji_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
+        romaji_entry = tk.Entry(edit_quiz_window, font=('Arial', 14))
+        romaji_entry.insert(0, selected_quiz['romaji'])
         romaji_entry.pack()
 
-        meaning_label = tk.Label(add_quiz_window, text='Significato:', font=('Arial', 14))
+        meaning_label = tk.Label(edit_quiz_window, text='Significato:', font=('Arial', 14))
         meaning_label.pack()
 
-        meaning_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
+        meaning_entry = tk.Entry(edit_quiz_window, font=('Arial', 14))
+        meaning_entry.insert(0, selected_quiz['meaning'])
         meaning_entry.pack()
 
-        type_label = tk.Label(add_quiz_window, text='Tipo (a/v):', font=('Arial', 14))
+        type_label = tk.Label(edit_quiz_window, text='Tipo (a/v):', font=('Arial', 14))
         type_label.pack()
 
-        type_entry = tk.Entry(add_quiz_window, font=('Arial', 14))
+        type_entry = tk.Entry(edit_quiz_window, font=('Arial', 14))
+        type_entry.insert(0, selected_quiz.get('type', ''))
         type_entry.pack()
 
-        def add_quiz():
-            kanji = kanji_entry.get()
-            meaning = meaning_entry.get()
-            romaji = romaji_entry.get()
-            quiz_type = type_entry.get().lower()
-            if quiz_type not in ['a', 'v']:
-                quiz_type = None
-            if romaji or meaning:
-                self.quiz_data[selected_category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': selected_category, 'type': quiz_type})
-                self.save_quiz_data()
-                add_quiz_window.destroy()
-            else:
-                messagebox.showerror('Errore', 'Inserisci sia il kanji che il significato.')
+    def add_quiz():
+        kanji = kanji_entry.get()
+        meaning = meaning_entry.get()
+        romaji = romaji_entry.get()
+        quiz_type = type_entry.get().lower()
+        if quiz_type not in ['a', 'v']:
+            quiz_type = None
+        if romaji or meaning:
+            self.quiz_data[selected_category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': selected_category, 'type': quiz_type})
+            self.save_quiz_data()
+            add_quiz_window.destroy()
+        else:
+            messagebox.showerror('Errore', 'Inserisci sia il kanji che il significato.')
 
-        add_button = tk.Button(add_quiz_window, text='Aggiungi', font=('Arial', 14), command=add_quiz)
-        add_button.pack(pady=10)
+    add_button = tk.Button(add_quiz_window, text='Aggiungi', font=('Arial', 14), command=add_quiz)
+    add_button.pack(pady=10)
 
 
 
