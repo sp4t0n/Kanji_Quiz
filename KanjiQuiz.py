@@ -32,13 +32,20 @@ class QuizApp:
         
         self.question_label = ttk.Label(root, font=('Arial', 24))
 
-        self.answer_entry = ttk.Entry(root, font=('Arial', 18))
-
+        # self.answer_entry = ttk.Entry(root, font=('Arial', 18))
+        
+        self.option1_button = tk.Button(self.root, text="", font=('Arial', 14), command=lambda: self.check_answer(1))
+        
+        self.option2_button = tk.Button(self.root, text="", font=('Arial', 14), command=lambda: self.check_answer(2))
+        
+        self.option3_button = tk.Button(self.root, text="", font=('Arial', 14), command=lambda: self.check_answer(3))
+        
         self.submit_button = ttk.Button(root, text='Invia', style='danger.TButton', command=self.check_answer, state=tk.DISABLED)
 
         self.next_button = ttk.Button(root, text='Prossima domanda', style='success.TButton', command=self.next_question, state=tk.DISABLED)
 
-        self.score_label = ttk.Label(root, font=('Arial', 16))
+        self.score_label = tk.Label(self.root, text="Punteggio: 0/0", font=('Arial', 14))
+        
 
         self.add_category_button = ttk.Button(root, text='Aggiungi Categoria', style='info.TButton', command=self.open_add_category_window)
 
@@ -261,10 +268,10 @@ class QuizApp:
     def switch_mode(self):
         if self.quiz_direction == 'kanji to meaning':
             self.quiz_direction = 'meaning to kanji'
-            messagebox.showinfo('Modalità cambiata', 'Ora devi indovinare il kanji dal significato.')
+            messagebox.showinfo('Modalità cambiata', 'Ora devi indovinare il kanji/Katakana dal significato.')
         else:
             self.quiz_direction = 'kanji to meaning'
-            messagebox.showinfo('Modalità cambiata', 'Ora devi indovinare il significato dal kanji.')
+            messagebox.showinfo('Modalità cambiata', 'Ora devi indovinare il significato dal kanji/katakana.')
         self.next_question()  # Mostra un nuovo quiz dopo il cambio di modalita
 
     def next_random_quiz(self):
@@ -296,27 +303,36 @@ class QuizApp:
             return None
 
 
-    def check_answer(self):
-        user_answer = self.answer_entry.get()
-        if not user_answer:
-            messagebox.showerror('Errore', 'Inserisci una risposta.')
-            return
-
-        if self.quiz_direction == 'meaning to kanji':
-            correct_answer = self.current_quiz['kanji'] if self.current_quiz['kanji'] else self.current_quiz['romaji']
-        else:
+    def check_answer(self, selected_option):
+        if self.quiz_direction == 'kanji to meaning':
             correct_answer = self.current_quiz['meaning']
-
-        if user_answer.lower() == correct_answer.lower():
-            self.score += 1
         else:
-            messagebox.showinfo('Risposta Sbagliata', f"La risposta corretta era: {correct_answer}")
+            correct_answer = self.current_quiz['kanji'] if self.current_quiz['kanji'] else self.current_quiz['romaji']
+
+        selected_answer = ""
+        if selected_option == 1:
+            selected_answer = self.option1_button['text']
+        elif selected_option == 2:
+            selected_answer = self.option2_button['text']
+        elif selected_option == 3:
+            selected_answer = self.option3_button['text']
+
+        if selected_answer == correct_answer:
+            # Risposta corretta
+            self.correct_answers += 1
+        else:
+            # Risposta errata
+            messagebox.showinfo('Risposta Errata', f'La risposta corretta era: {correct_answer}')
 
         self.total_questions += 1
-        self.score_label['text'] = f"Punteggio: {self.score}/{self.total_questions}"
-        self.answer_entry.delete(0, tk.END)
+        self.update_score()
+        self.next_question()
         self.next_button['state'] = tk.NORMAL
-        self.submit_button['state'] = tk.DISABLED
+        
+
+    def update_score(self):
+        self.score_label['text'] = f"Punteggio: {self.correct_answers}/{self.total_questions}"
+
 
 
     def load_quiz(self, event):
@@ -329,25 +345,28 @@ class QuizApp:
         next_quiz = self.next_random_quiz()
         if next_quiz is not None:
             self.current_quiz = next_quiz
-            type_suffix = ""
-            if next_quiz.get('type') == 'a':
-                type_suffix = " (aggettivo)"
-            elif next_quiz.get('type') == 'v':
-                type_suffix = " (verbo)"
+            wrong_answers = random.sample(list(self.quiz_data[self.current_category]), 2)
+            options = [next_quiz['meaning'], wrong_answers[0]['meaning'], wrong_answers[1]['meaning']]
+            random.shuffle(options)
+
+            self.option1_button['text'] = options[0]
+            self.option2_button['text'] = options[1]
+            self.option3_button['text'] = options[2]
 
             if self.quiz_direction == 'kanji to meaning':
                 if next_quiz['kanji']:
-                    self.question_label['text'] = f"Quale è il significato di questo kanji: {next_quiz['kanji']} ({next_quiz['romaji']}){type_suffix}?"
+                    self.question_label['text'] = f"Quale è il significato di questo kanji/katakana: {next_quiz['kanji']} ({next_quiz['romaji']})?"
                 else:
-                    self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}{type_suffix}?"
+                    self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}?"
             else:
                 if next_quiz['kanji']:
-                    self.question_label['text'] = f"Quale kanji rappresenta questo significato: {next_quiz['meaning']}?"
+                    self.question_label['text'] = f"Quale kanji/katakana rappresenta questo significato: {next_quiz['meaning']}?"
                 else:
-                    self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}{type_suffix}?"
+                    self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}?"
 
             self.next_button['state'] = tk.DISABLED
             self.submit_button['state'] = tk.NORMAL
+
 
     def open_add_quiz_window(self):
         selected_index = self.category_listbox.curselection()
