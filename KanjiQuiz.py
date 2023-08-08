@@ -16,6 +16,7 @@ class QuizApp:
         self.current_category = ""
         self.current_quiz = None
         self.score = 0
+        self.correct_answers = 0
         self.total_questions = 0
         self.shown_quizzes = {}
         self.quiz_data = {}
@@ -71,7 +72,11 @@ class QuizApp:
 
         self.switch_mode_button.grid(row=4, column=0, columnspan=4, pady=10)
         self.question_label.grid(row=5, column=0, columnspan=4, pady=10)
-        self.answer_entry.grid(row=6, column=0, columnspan=4, pady=10)
+        # self.answer_entry.grid(row=6, column=0, columnspan=4, pady=10)
+        self.option1_button.grid(row=6, column=0, pady=10, padx=10, sticky="w")
+        self.option2_button.grid(row=6, column=1, pady=10, padx=10, sticky="w")
+        self.option3_button.grid(row=6, column=2, pady=10, padx=10, sticky="w")
+
         self.submit_button.grid(row=7, column=0, columnspan=4)
         self.next_button.grid(row=8, column=0, columnspan=4, pady=10)
         self.score_label.grid(row=9, column=0, columnspan=4)
