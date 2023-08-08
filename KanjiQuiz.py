@@ -280,32 +280,42 @@ class QuizApp:
         self.next_question()  # Mostra un nuovo quiz dopo il cambio di modalita
 
     def next_random_quiz(self):
-        selected_categories = self.category_listbox.curselection()
-        if not selected_categories:
-            messagebox.showerror('Errore', 'Seleziona una o più categorie.')
-            return
-
-        self.current_category = self.quiz_categories[random.choice(selected_categories)]
-    
-        if self.current_category not in self.quiz_data:
-            self.quiz_data[self.current_category] = []
-
-        if self.current_category not in self.shown_quizzes:
-            self.shown_quizzes[self.current_category] = set()
-
-        if len(self.shown_quizzes[self.current_category]) == len(self.quiz_data[self.current_category]):
-            # If we have shown all quizzes in this category, reset the set
-            self.shown_quizzes[self.current_category] = set()
-
-        remaining_quizzes = [q for q in self.quiz_data[self.current_category] if str(q) not in self.shown_quizzes[self.current_category]]
-
-        if remaining_quizzes:
-            quiz = random.choice(remaining_quizzes)
-            self.shown_quizzes[self.current_category].add(str(quiz))
-            return quiz
-        else:
+        if not self.quiz_data:
             messagebox.showinfo('No Quizzes', 'La categoria selezionata non contiene ancora quiz.')
             return None
+
+        category = random.choice(list(self.quiz_data.keys()))
+        if not self.quiz_data[category]:
+            messagebox.showinfo('No Quizzes', 'La categoria selezionata non contiene ancora quiz.')
+            return None
+
+        quiz = random.choice(self.quiz_data[category])
+
+        # Estrai tutte le risposte possibili escludendo la corretta
+        all_answers = [q['meaning'] for c in self.quiz_data for q in self.quiz_data[c] if q['meaning'] != quiz['meaning']]
+    
+        # Seleziona due risposte errate uniche
+        wrong_answers = random.sample(all_answers, 2)
+
+        # Assicurati che le risposte errate siano diverse tra loro e dalla risposta corretta
+        while wrong_answers[0] == wrong_answers[1] or wrong_answers[0] == quiz['meaning'] or wrong_answers[1] == quiz['meaning']:
+            wrong_answers = random.sample(all_answers, 2)
+
+        # Aggiungi il tipo di quiz (verbo o aggettivo) alle risposte
+        type_str = ""
+        if quiz['type'] == 'a':
+            type_str = " (aggettivo)"
+        elif quiz['type'] == 'v':
+            type_str = " (verbo)"
+
+        quiz['options'] = [
+            quiz['meaning'] + type_str,
+            wrong_answers[0] + type_str,
+            wrong_answers[1] + type_str
+        ]
+        random.shuffle(quiz['options'])
+
+        return quiz
 
 
     def check_answer(self, selected_option):
