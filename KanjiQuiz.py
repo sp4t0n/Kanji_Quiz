@@ -314,6 +314,10 @@ class QuizApp:
         else:
             correct_answer = self.current_quiz['kanji'] if self.current_quiz['kanji'] else self.current_quiz['romaji']
 
+        # Aggiungi il tipo (a/v) alla risposta corretta se presente
+        if self.current_quiz.get('type'):
+            correct_answer += f" ({self.current_quiz['type']})"
+
         selected_answer = ""
         if selected_option == 1:
             selected_answer = self.option1_button['text']
@@ -322,7 +326,7 @@ class QuizApp:
         elif selected_option == 3:
             selected_answer = self.option3_button['text']
 
-        if selected_answer == correct_answer:
+        if selected_answer.strip().lower() == correct_answer.strip().lower():
             # Risposta corretta
             self.correct_answers += 1
         else:
@@ -350,30 +354,28 @@ class QuizApp:
         next_quiz = self.next_random_quiz()
         if next_quiz is not None:
             self.current_quiz = next_quiz
-        
-            # Ottieni tutte le possibili risposte errate escludendo la risposta corretta
-            possible_wrong_answers = [quiz for quiz in self.quiz_data[self.current_category] if quiz != next_quiz]
 
-            # Se non ci sono abbastanza risposte errate nella categoria corrente, cerca nelle altre categorie
+            # Ottieni tutte le possibili risposte errate escludendo la risposta corretta e che hanno lo stesso tipo
+            possible_wrong_answers = [quiz for quiz in self.quiz_data[self.current_category] if quiz != self.current_quiz and quiz.get('type') == self.current_quiz.get('type')]
+
+            # Se non ci sono abbastanza risposte errate dello stesso tipo nella categoria corrente, prendi da tutte le categorie
             if len(possible_wrong_answers) < 2:
-                for category, quizzes in self.quiz_data.items():
-                    if category not in self.selected_categories:
-                        possible_wrong_answers.extend(quizzes)
-                possible_wrong_answers = [quiz for quiz in possible_wrong_answers if quiz != next_quiz]
-        
-            # Seleziona due risposte errate uniche
-            wrong_answers = random.sample(possible_wrong_answers, 2)
-        
+                all_other_quizzes = [quiz for cat, quizzes in self.quiz_data.items() for quiz in quizzes if cat != self.current_category and quiz != self.current_quiz and quiz.get('type') == self.current_quiz.get('type')]
+                wrong_answers = random.sample(all_other_quizzes, 2 - len(possible_wrong_answers))
+                wrong_answers.extend(possible_wrong_answers)
+            else:
+                wrong_answers = random.sample(possible_wrong_answers, 2)
+
             # Funzione per ottenere il tipo (verbo/aggettivo) se presente
             def get_type(quiz):
                 return f" ({quiz['type']})" if quiz['type'] else ""
-        
+
             if self.quiz_direction == 'kanji to meaning':
                 # Creare le opzioni di risposta
                 options = [next_quiz['meaning'] + get_type(next_quiz), 
                            wrong_answers[0]['meaning'] + get_type(wrong_answers[0]), 
                            wrong_answers[1]['meaning'] + get_type(wrong_answers[1])]
-            
+        
                 random.shuffle(options)
                 self.option1_button['text'] = options[0]
                 self.option2_button['text'] = options[1]
@@ -384,13 +386,13 @@ class QuizApp:
                     self.question_label['text'] = f"Quale è il significato di questo kanji/katakana: {next_quiz['kanji']} ({next_quiz['romaji']}){question_type}?"
                 else:
                     self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}{question_type}?"
-            
+        
             else:
                 # Creare le opzioni di risposta
                 options = [next_quiz['kanji'] + get_type(next_quiz) if next_quiz['kanji'] else next_quiz['romaji'] + get_type(next_quiz),
                            wrong_answers[0]['kanji'] + get_type(wrong_answers[0]) if wrong_answers[0]['kanji'] else wrong_answers[0]['romaji'] + get_type(wrong_answers[0]),
                            wrong_answers[1]['kanji'] + get_type(wrong_answers[1]) if wrong_answers[1]['kanji'] else wrong_answers[1]['romaji'] + get_type(wrong_answers[1])]
-            
+        
                 random.shuffle(options)
                 self.option1_button['text'] = options[0]
                 self.option2_button['text'] = options[1]
