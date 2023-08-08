@@ -8,6 +8,10 @@ import random
 DATA_FILE = "quiz_data.xlsx"
 
 class QuizApp:
+    
+    # Initialization and Setup
+    # Queste sono le funzioni che inizializzano l'applicazione e impostano l'interfaccia utente.
+    
     def __init__(self, root):
         self.root = root
         self.root.title("Kanji Quiz")
@@ -62,6 +66,7 @@ class QuizApp:
 
         self.create_layout()
 
+
     def create_layout(self):
         self.add_category_button.grid(row=0, column=0, pady=10, padx=10)
         self.edit_category_button.grid(row=1, column=0, pady=10, padx=10)
@@ -80,6 +85,233 @@ class QuizApp:
         self.submit_button.grid(row=7, column=0, columnspan=4)
         self.next_button.grid(row=8, column=0, columnspan=4, pady=10)
         self.score_label.grid(row=9, column=0, columnspan=4)
+
+
+    def load_quiz_data(self):
+        try:
+            if not os.path.isfile(DATA_FILE):
+                wb = Workbook()
+                ws = wb.active
+                ws.title = 'Data'
+
+                ws['A1'] = 'Kanji'
+                ws['B1'] = 'Romanji'
+                ws['C1'] = 'Significato'
+                ws['D1'] = 'Categoria'
+                ws['E1'] = 'Tipo (Verbo v /Aggettivo a)'
+
+                for column in ['A', 'B', 'C', 'D', 'E']:
+                    ws.column_dimensions[column].width = 30
+
+                wb.save(DATA_FILE)
+                self.quiz_data['Generale'] = []
+            else:
+                wb = load_workbook(DATA_FILE)
+                ws = wb.active
+                for row in ws.iter_rows(min_row=2):
+                    kanji, romaji, meaning, category, quiz_type = (row[0].value, row[1].value, row[2].value, row[3].value, row[4].value)
+                    if quiz_type:
+                        quiz_type = quiz_type.lower()
+                        row[4].value = quiz_type  # Aggiorna il valore nel file Excel
+                    if not category or category == "Categoria":
+                        category = "Generale"
+                    if category not in self.quiz_data:
+                        self.quiz_data[category] = []
+                        self.quiz_categories.append(category)
+                    if romaji or meaning:
+                        self.quiz_data[category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category, 'type': quiz_type})
+
+                # Salva le modifiche nel file Excel
+                wb.save(DATA_FILE)
+
+                # Aggiorna la variabile della categoria
+                self.category_var.set(self.quiz_categories)                
+        except Exception as e:
+            messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
+
+
+    def save_quiz_data(self):
+        try:
+            # Controlla se il file esiste già
+            if os.path.isfile(DATA_FILE):
+                # Se esiste, carica il foglio di lavoro
+                wb = load_workbook(DATA_FILE)
+            else:
+                # Se non esiste, crea un nuovo foglio di lavoro
+                wb = Workbook()
+
+            for category, quizzes in self.quiz_data.items():
+                if category in wb.sheetnames:
+                    # se il foglio esiste già nel foglio di lavoro, usalo
+                    ws = wb[category]
+                else:
+                    # se il foglio non esiste nel foglio di lavoro, crealo
+                    ws = wb.create_sheet(title=category)
+
+                # Cancella le righe esistenti nel foglio di lavoro
+                for row in ws.iter_rows(min_row=ws.min_row, max_col=ws.max_column, max_row=ws.max_row):
+                    for cell in row:
+                        cell.value = None
+
+                # Aggiungi nuove righe
+                for quiz in quizzes:
+                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning'], quiz['category'], quiz['type']])
+
+            wb.save(DATA_FILE)
+
+        except PermissionError:
+            messagebox.showerror("Errore di salvataggio", "Impossibile salvare i dati del quiz. "
+                                                          "Assicurati che il file non sia aperto in un altro programma e riprova."
+                                                          "Se il problema persiste, assicurati che il file non sia in uso da un altro programma.")
+        except Exception as e:
+            messagebox.showerror("Errore di salvataggio", f"Si è verificato un errore durante il salvataggio dei dati del quiz: {str(e)}")
+
+
+    #Quiz Flow Control 
+    ##Queste funzioni gestiscono il flusso del quiz, come caricare nuove domande e controllare le risposte.
+
+
+    def load_quiz(self, event):
+        selected_categories = [self.quiz_categories[i] for i in self.category_listbox.curselection()]
+        if selected_categories:
+            self.selected_categories = selected_categories
+            self.next_question()
+
+
+    def next_random_quiz(self):
+        selected_categories = self.category_listbox.curselection()
+        if not selected_categories:
+            messagebox.showerror('Errore', 'Seleziona una o più categorie.')
+            return
+
+        self.current_category = self.quiz_categories[random.choice(selected_categories)]
+    
+        if self.current_category not in self.quiz_data:
+            self.quiz_data[self.current_category] = []
+
+        if self.current_category not in self.shown_quizzes:
+            self.shown_quizzes[self.current_category] = set()
+
+        if len(self.shown_quizzes[self.current_category]) == len(self.quiz_data[self.current_category]):
+            # If we have shown all quizzes in this category, reset the set
+            self.shown_quizzes[self.current_category] = set()
+
+        remaining_quizzes = [q for q in self.quiz_data[self.current_category] if str(q) not in self.shown_quizzes[self.current_category]]
+
+        if remaining_quizzes:
+            quiz = random.choice(remaining_quizzes)
+            self.shown_quizzes[self.current_category].add(str(quiz))
+            return quiz
+        else:
+            messagebox.showinfo('No Quizzes', 'La categoria selezionata non contiene ancora quiz.')
+            return None
+
+
+    def next_question(self):
+        next_quiz = self.next_random_quiz()
+        if next_quiz is not None:
+            self.current_quiz = next_quiz
+
+            # Ottieni tutte le possibili risposte errate escludendo la risposta corretta e che hanno lo stesso tipo
+            possible_wrong_answers = [quiz for quiz in self.quiz_data[self.current_category] if quiz != self.current_quiz and quiz.get('type') == self.current_quiz.get('type')]
+
+            # Se non ci sono abbastanza risposte errate dello stesso tipo nella categoria corrente, prendi da tutte le categorie
+            if len(possible_wrong_answers) < 2:
+                all_other_quizzes = [quiz for cat, quizzes in self.quiz_data.items() for quiz in quizzes if cat != self.current_category and quiz != self.current_quiz and quiz.get('type') == self.current_quiz.get('type')]
+                wrong_answers = random.sample(all_other_quizzes, 2 - len(possible_wrong_answers))
+                wrong_answers.extend(possible_wrong_answers)
+            else:
+                wrong_answers = random.sample(possible_wrong_answers, 2)
+
+            # Funzione per ottenere il tipo (verbo/aggettivo) se presente
+            def get_type(quiz):
+                return f" ({quiz['type']})" if quiz['type'] else ""
+
+            if self.quiz_direction == 'kanji to meaning':
+                # Creare le opzioni di risposta
+                options = [next_quiz['meaning'] + get_type(next_quiz), 
+                           wrong_answers[0]['meaning'] + get_type(wrong_answers[0]), 
+                           wrong_answers[1]['meaning'] + get_type(wrong_answers[1])]
+        
+                random.shuffle(options)
+                self.option1_button['text'] = options[0]
+                self.option2_button['text'] = options[1]
+                self.option3_button['text'] = options[2]
+
+                question_type = get_type(next_quiz)
+                if next_quiz['kanji']:
+                    self.question_label['text'] = f"Quale è il significato di questo kanji/katakana: {next_quiz['kanji']} ({next_quiz['romaji']}){question_type}?"
+                else:
+                    self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}{question_type}?"
+        
+            else:
+                # Creare le opzioni di risposta
+                options = [next_quiz['kanji'] + get_type(next_quiz) if next_quiz['kanji'] else next_quiz['romaji'] + get_type(next_quiz),
+                           wrong_answers[0]['kanji'] + get_type(wrong_answers[0]) if wrong_answers[0]['kanji'] else wrong_answers[0]['romaji'] + get_type(wrong_answers[0]),
+                           wrong_answers[1]['kanji'] + get_type(wrong_answers[1]) if wrong_answers[1]['kanji'] else wrong_answers[1]['romaji'] + get_type(wrong_answers[1])]
+        
+                random.shuffle(options)
+                self.option1_button['text'] = options[0]
+                self.option2_button['text'] = options[1]
+                self.option3_button['text'] = options[2]
+
+                question_type = get_type(next_quiz)
+                if next_quiz['kanji']:
+                    self.question_label['text'] = f"Quale kanji/katakana rappresenta questo significato: {next_quiz['meaning']}{question_type}?"
+                else:
+                    self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}{question_type}?"
+
+            self.next_button['state'] = tk.DISABLED
+            self.submit_button['state'] = tk.NORMAL
+
+
+    def check_answer(self, selected_option):
+        if self.quiz_direction == 'kanji to meaning':
+            correct_answer = self.current_quiz['meaning']
+        else:
+            correct_answer = self.current_quiz['kanji'] if self.current_quiz['kanji'] else self.current_quiz['romaji']
+
+        # Aggiungi il tipo (a/v) alla risposta corretta se presente
+        if self.current_quiz.get('type'):
+            correct_answer += f" ({self.current_quiz['type']})"
+
+        selected_answer = ""
+        if selected_option == 1:
+            selected_answer = self.option1_button['text']
+        elif selected_option == 2:
+            selected_answer = self.option2_button['text']
+        elif selected_option == 3:
+            selected_answer = self.option3_button['text']
+
+        if selected_answer.strip().lower() == correct_answer.strip().lower():
+            # Risposta corretta
+            self.correct_answers += 1
+        else:
+            # Risposta errata
+            messagebox.showinfo('Risposta Errata', f'La risposta corretta era: {correct_answer}')
+
+        self.total_questions += 1
+        self.update_score()
+        self.next_question()
+        self.next_button['state'] = tk.NORMAL
+
+        
+    def update_score(self):
+        self.score_label['text'] = f"Punteggio: {self.correct_answers}/{self.total_questions}"
+
+
+    def switch_mode(self):
+        if self.quiz_direction == 'kanji to meaning':
+            self.quiz_direction = 'meaning to kanji'
+            messagebox.showinfo('Modalità cambiata', 'Ora devi indovinare il kanji/Katakana dal significato.')
+        else:
+            self.quiz_direction = 'kanji to meaning'
+            messagebox.showinfo('Modalità cambiata', 'Ora devi indovinare il significato dal kanji/katakana.')
+        self.next_question()  # Mostra un nuovo quiz dopo il cambio di modalita
+
+
+    #Quiz Management (Add/Edit) 
+    ##Queste funzioni gestiscono l'aggiunta e la modifica dei quiz
 
 
     def open_add_category_window(self):
@@ -188,227 +420,6 @@ class QuizApp:
         edit_button.pack(pady=10)
 
 
-
-    def load_quiz_data(self):
-        try:
-            if not os.path.isfile(DATA_FILE):
-                wb = Workbook()
-                ws = wb.active
-                ws.title = 'Data'
-
-                ws['A1'] = 'Kanji'
-                ws['B1'] = 'Romanji'
-                ws['C1'] = 'Significato'
-                ws['D1'] = 'Categoria'
-                ws['E1'] = 'Tipo (Verbo v /Aggettivo a)'
-
-                for column in ['A', 'B', 'C', 'D', 'E']:
-                    ws.column_dimensions[column].width = 30
-
-                wb.save(DATA_FILE)
-                self.quiz_data['Generale'] = []
-            else:
-                wb = load_workbook(DATA_FILE)
-                ws = wb.active
-                for row in ws.iter_rows(min_row=2):
-                    kanji, romaji, meaning, category, quiz_type = (row[0].value, row[1].value, row[2].value, row[3].value, row[4].value)
-                    if quiz_type:
-                        quiz_type = quiz_type.lower()
-                        row[4].value = quiz_type  # Aggiorna il valore nel file Excel
-                    if not category or category == "Categoria":
-                        category = "Generale"
-                    if category not in self.quiz_data:
-                        self.quiz_data[category] = []
-                        self.quiz_categories.append(category)
-                    if romaji or meaning:
-                        self.quiz_data[category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category, 'type': quiz_type})
-
-                # Salva le modifiche nel file Excel
-                wb.save(DATA_FILE)
-
-                # Aggiorna la variabile della categoria
-                self.category_var.set(self.quiz_categories)                
-        except Exception as e:
-            messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
-
-
-
-    def save_quiz_data(self):
-        try:
-            # Controlla se il file esiste già
-            if os.path.isfile(DATA_FILE):
-                # Se esiste, carica il foglio di lavoro
-                wb = load_workbook(DATA_FILE)
-            else:
-                # Se non esiste, crea un nuovo foglio di lavoro
-                wb = Workbook()
-
-            for category, quizzes in self.quiz_data.items():
-                if category in wb.sheetnames:
-                    # se il foglio esiste già nel foglio di lavoro, usalo
-                    ws = wb[category]
-                else:
-                    # se il foglio non esiste nel foglio di lavoro, crealo
-                    ws = wb.create_sheet(title=category)
-
-                # Cancella le righe esistenti nel foglio di lavoro
-                for row in ws.iter_rows(min_row=ws.min_row, max_col=ws.max_column, max_row=ws.max_row):
-                    for cell in row:
-                        cell.value = None
-
-                # Aggiungi nuove righe
-                for quiz in quizzes:
-                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning'], quiz['category'], quiz['type']])
-
-            wb.save(DATA_FILE)
-
-        except PermissionError:
-            messagebox.showerror("Errore di salvataggio", "Impossibile salvare i dati del quiz. "
-                                                          "Assicurati che il file non sia aperto in un altro programma e riprova."
-                                                          "Se il problema persiste, assicurati che il file non sia in uso da un altro programma.")
-        except Exception as e:
-            messagebox.showerror("Errore di salvataggio", f"Si è verificato un errore durante il salvataggio dei dati del quiz: {str(e)}")
-
-
-    def switch_mode(self):
-        if self.quiz_direction == 'kanji to meaning':
-            self.quiz_direction = 'meaning to kanji'
-            messagebox.showinfo('Modalità cambiata', 'Ora devi indovinare il kanji/Katakana dal significato.')
-        else:
-            self.quiz_direction = 'kanji to meaning'
-            messagebox.showinfo('Modalità cambiata', 'Ora devi indovinare il significato dal kanji/katakana.')
-        self.next_question()  # Mostra un nuovo quiz dopo il cambio di modalita
-
-    def next_random_quiz(self):
-        selected_categories = self.category_listbox.curselection()
-        if not selected_categories:
-            messagebox.showerror('Errore', 'Seleziona una o più categorie.')
-            return
-
-        self.current_category = self.quiz_categories[random.choice(selected_categories)]
-    
-        if self.current_category not in self.quiz_data:
-            self.quiz_data[self.current_category] = []
-
-        if self.current_category not in self.shown_quizzes:
-            self.shown_quizzes[self.current_category] = set()
-
-        if len(self.shown_quizzes[self.current_category]) == len(self.quiz_data[self.current_category]):
-            # If we have shown all quizzes in this category, reset the set
-            self.shown_quizzes[self.current_category] = set()
-
-        remaining_quizzes = [q for q in self.quiz_data[self.current_category] if str(q) not in self.shown_quizzes[self.current_category]]
-
-        if remaining_quizzes:
-            quiz = random.choice(remaining_quizzes)
-            self.shown_quizzes[self.current_category].add(str(quiz))
-            return quiz
-        else:
-            messagebox.showinfo('No Quizzes', 'La categoria selezionata non contiene ancora quiz.')
-            return None
-
-
-    def check_answer(self, selected_option):
-        if self.quiz_direction == 'kanji to meaning':
-            correct_answer = self.current_quiz['meaning']
-        else:
-            correct_answer = self.current_quiz['kanji'] if self.current_quiz['kanji'] else self.current_quiz['romaji']
-
-        # Aggiungi il tipo (a/v) alla risposta corretta se presente
-        if self.current_quiz.get('type'):
-            correct_answer += f" ({self.current_quiz['type']})"
-
-        selected_answer = ""
-        if selected_option == 1:
-            selected_answer = self.option1_button['text']
-        elif selected_option == 2:
-            selected_answer = self.option2_button['text']
-        elif selected_option == 3:
-            selected_answer = self.option3_button['text']
-
-        if selected_answer.strip().lower() == correct_answer.strip().lower():
-            # Risposta corretta
-            self.correct_answers += 1
-        else:
-            # Risposta errata
-            messagebox.showinfo('Risposta Errata', f'La risposta corretta era: {correct_answer}')
-
-        self.total_questions += 1
-        self.update_score()
-        self.next_question()
-        self.next_button['state'] = tk.NORMAL
-        
-
-    def update_score(self):
-        self.score_label['text'] = f"Punteggio: {self.correct_answers}/{self.total_questions}"
-
-
-
-    def load_quiz(self, event):
-        selected_categories = [self.quiz_categories[i] for i in self.category_listbox.curselection()]
-        if selected_categories:
-            self.selected_categories = selected_categories
-            self.next_question()
-
-    def next_question(self):
-        next_quiz = self.next_random_quiz()
-        if next_quiz is not None:
-            self.current_quiz = next_quiz
-
-            # Ottieni tutte le possibili risposte errate escludendo la risposta corretta e che hanno lo stesso tipo
-            possible_wrong_answers = [quiz for quiz in self.quiz_data[self.current_category] if quiz != self.current_quiz and quiz.get('type') == self.current_quiz.get('type')]
-
-            # Se non ci sono abbastanza risposte errate dello stesso tipo nella categoria corrente, prendi da tutte le categorie
-            if len(possible_wrong_answers) < 2:
-                all_other_quizzes = [quiz for cat, quizzes in self.quiz_data.items() for quiz in quizzes if cat != self.current_category and quiz != self.current_quiz and quiz.get('type') == self.current_quiz.get('type')]
-                wrong_answers = random.sample(all_other_quizzes, 2 - len(possible_wrong_answers))
-                wrong_answers.extend(possible_wrong_answers)
-            else:
-                wrong_answers = random.sample(possible_wrong_answers, 2)
-
-            # Funzione per ottenere il tipo (verbo/aggettivo) se presente
-            def get_type(quiz):
-                return f" ({quiz['type']})" if quiz['type'] else ""
-
-            if self.quiz_direction == 'kanji to meaning':
-                # Creare le opzioni di risposta
-                options = [next_quiz['meaning'] + get_type(next_quiz), 
-                           wrong_answers[0]['meaning'] + get_type(wrong_answers[0]), 
-                           wrong_answers[1]['meaning'] + get_type(wrong_answers[1])]
-        
-                random.shuffle(options)
-                self.option1_button['text'] = options[0]
-                self.option2_button['text'] = options[1]
-                self.option3_button['text'] = options[2]
-
-                question_type = get_type(next_quiz)
-                if next_quiz['kanji']:
-                    self.question_label['text'] = f"Quale è il significato di questo kanji/katakana: {next_quiz['kanji']} ({next_quiz['romaji']}){question_type}?"
-                else:
-                    self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}{question_type}?"
-        
-            else:
-                # Creare le opzioni di risposta
-                options = [next_quiz['kanji'] + get_type(next_quiz) if next_quiz['kanji'] else next_quiz['romaji'] + get_type(next_quiz),
-                           wrong_answers[0]['kanji'] + get_type(wrong_answers[0]) if wrong_answers[0]['kanji'] else wrong_answers[0]['romaji'] + get_type(wrong_answers[0]),
-                           wrong_answers[1]['kanji'] + get_type(wrong_answers[1]) if wrong_answers[1]['kanji'] else wrong_answers[1]['romaji'] + get_type(wrong_answers[1])]
-        
-                random.shuffle(options)
-                self.option1_button['text'] = options[0]
-                self.option2_button['text'] = options[1]
-                self.option3_button['text'] = options[2]
-
-                question_type = get_type(next_quiz)
-                if next_quiz['kanji']:
-                    self.question_label['text'] = f"Quale kanji/katakana rappresenta questo significato: {next_quiz['meaning']}{question_type}?"
-                else:
-                    self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}{question_type}?"
-
-            self.next_button['state'] = tk.DISABLED
-            self.submit_button['state'] = tk.NORMAL
-
-
-
     def open_add_quiz_window(self):
         selected_index = self.category_listbox.curselection()
         if not selected_index:
@@ -461,7 +472,6 @@ class QuizApp:
 
         add_button = tk.Button(add_quiz_window, text='Aggiungi', font=('Arial', 14), command=add_quiz)
         add_button.pack(pady=10)
-
 
 
 if __name__ == "__main__":
