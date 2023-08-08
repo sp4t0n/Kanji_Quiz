@@ -350,27 +350,61 @@ class QuizApp:
         next_quiz = self.next_random_quiz()
         if next_quiz is not None:
             self.current_quiz = next_quiz
-            wrong_answers = random.sample(list(self.quiz_data[self.current_category]), 2)
-            options = [next_quiz['meaning'], wrong_answers[0]['meaning'], wrong_answers[1]['meaning']]
-            random.shuffle(options)
+        
+            # Ottieni tutte le possibili risposte errate escludendo la risposta corretta
+            possible_wrong_answers = [quiz for quiz in self.quiz_data[self.current_category] if quiz != next_quiz]
 
-            self.option1_button['text'] = options[0]
-            self.option2_button['text'] = options[1]
-            self.option3_button['text'] = options[2]
-
+            # Se non ci sono abbastanza risposte errate nella categoria corrente, cerca nelle altre categorie
+            if len(possible_wrong_answers) < 2:
+                for category, quizzes in self.quiz_data.items():
+                    if category not in self.selected_categories:
+                        possible_wrong_answers.extend(quizzes)
+                possible_wrong_answers = [quiz for quiz in possible_wrong_answers if quiz != next_quiz]
+        
+            # Seleziona due risposte errate uniche
+            wrong_answers = random.sample(possible_wrong_answers, 2)
+        
+            # Funzione per ottenere il tipo (verbo/aggettivo) se presente
+            def get_type(quiz):
+                return f" ({quiz['type']})" if quiz['type'] else ""
+        
             if self.quiz_direction == 'kanji to meaning':
+                # Creare le opzioni di risposta
+                options = [next_quiz['meaning'] + get_type(next_quiz), 
+                           wrong_answers[0]['meaning'] + get_type(wrong_answers[0]), 
+                           wrong_answers[1]['meaning'] + get_type(wrong_answers[1])]
+            
+                random.shuffle(options)
+                self.option1_button['text'] = options[0]
+                self.option2_button['text'] = options[1]
+                self.option3_button['text'] = options[2]
+
+                question_type = get_type(next_quiz)
                 if next_quiz['kanji']:
-                    self.question_label['text'] = f"Quale è il significato di questo kanji/katakana: {next_quiz['kanji']} ({next_quiz['romaji']})?"
+                    self.question_label['text'] = f"Quale è il significato di questo kanji/katakana: {next_quiz['kanji']} ({next_quiz['romaji']}){question_type}?"
                 else:
-                    self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}?"
+                    self.question_label['text'] = f"Quale è il significato di questo romaji: {next_quiz['romaji']}{question_type}?"
+            
             else:
+                # Creare le opzioni di risposta
+                options = [next_quiz['kanji'] + get_type(next_quiz) if next_quiz['kanji'] else next_quiz['romaji'] + get_type(next_quiz),
+                           wrong_answers[0]['kanji'] + get_type(wrong_answers[0]) if wrong_answers[0]['kanji'] else wrong_answers[0]['romaji'] + get_type(wrong_answers[0]),
+                           wrong_answers[1]['kanji'] + get_type(wrong_answers[1]) if wrong_answers[1]['kanji'] else wrong_answers[1]['romaji'] + get_type(wrong_answers[1])]
+            
+                random.shuffle(options)
+                self.option1_button['text'] = options[0]
+                self.option2_button['text'] = options[1]
+                self.option3_button['text'] = options[2]
+
+                question_type = get_type(next_quiz)
                 if next_quiz['kanji']:
-                    self.question_label['text'] = f"Quale kanji/katakana rappresenta questo significato: {next_quiz['meaning']}?"
+                    self.question_label['text'] = f"Quale kanji/katakana rappresenta questo significato: {next_quiz['meaning']}{question_type}?"
                 else:
-                    self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}?"
+                    self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}{question_type}?"
 
             self.next_button['state'] = tk.DISABLED
             self.submit_button['state'] = tk.NORMAL
+
 
 
     def open_add_quiz_window(self):
