@@ -50,8 +50,9 @@ class QuizApp:
         self.next_button = ttk.Button(root, text='Prossima domanda', style='success.TButton', command=self.next_question, state=tk.DISABLED)
 
         self.score_label = tk.Label(self.root, text="Punteggio: 0/0", font=('Arial', 14))
+ 
+        self.show_answers_button = tk.Button(self.root, text="Mostra risposte", command=self.show_answers)
         
-
         self.add_category_button = ttk.Button(root, text='Aggiungi Categoria', style='info.TButton', command=self.open_add_category_window)
 
         self.edit_category_button = ttk.Button(root, text='Modifica Categoria', style='info.TButton', command=self.open_edit_category_window)
@@ -78,11 +79,10 @@ class QuizApp:
         self.switch_mode_button.grid(row=4, column=0, columnspan=4, pady=10)
         self.question_label.grid(row=5, column=0, columnspan=4, pady=10)
         # self.answer_entry.grid(row=6, column=0, columnspan=4, pady=10)
-        self.option1_button.grid(row=6, column=0, pady=10, padx=10, sticky="w")
-        self.option2_button.grid(row=6, column=1, pady=10, padx=10, sticky="w")
-        self.option3_button.grid(row=6, column=2, pady=10, padx=10, sticky="w")
+        self.show_answers_button.grid(row=6, column=0, columnspan=4, pady=10)
+        
 
-        self.submit_button.grid(row=7, column=0, columnspan=4)
+        self.submit_button.grid(row=8, column=0, columnspan=4)
         #self.next_button.grid(row=8, column=0, columnspan=4, pady=10)
         self.score_label.grid(row=9, column=0, columnspan=4)
 
@@ -240,6 +240,10 @@ class QuizApp:
                 self.option1_button['text'] = options[0]
                 self.option2_button['text'] = options[1]
                 self.option3_button['text'] = options[2]
+                # Nascondi le risposte
+                self.option1_button.grid_remove()
+                self.option2_button.grid_remove()
+                self.option3_button.grid_remove()
 
                 question_type = get_type(next_quiz)
                 if next_quiz['kanji']:
@@ -257,16 +261,23 @@ class QuizApp:
                 self.option1_button['text'] = options[0]
                 self.option2_button['text'] = options[1]
                 self.option3_button['text'] = options[2]
-
+                # Nascondi le risposte
+                self.option1_button.grid_remove()
+                self.option2_button.grid_remove()
+                self.option3_button.grid_remove()
                 question_type = get_type(next_quiz)
                 if next_quiz['kanji']:
                     self.question_label['text'] = f"Quale kanji/katakana rappresenta questo significato: {next_quiz['meaning']}{question_type}?"
                 else:
                     self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}{question_type}?"
-
+                
             self.next_button['state'] = tk.DISABLED
             self.submit_button['state'] = tk.NORMAL
 
+    def show_answers(self):
+        self.option1_button.grid(row=7, column=0, pady=20)
+        self.option2_button.grid(row=7, column=1, pady=20)
+        self.option3_button.grid(row=7, column=2, pady=20)
 
     def check_answer(self, selected_option):
         if self.quiz_direction == 'kanji to meaning':
