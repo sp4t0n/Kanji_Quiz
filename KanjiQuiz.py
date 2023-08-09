@@ -44,12 +44,10 @@ class QuizApp:
         self.option2_button = tk.Button(self.root, text="", font=('Arial', 14), command=lambda: self.check_answer(2))
         
         self.option3_button = tk.Button(self.root, text="", font=('Arial', 14), command=lambda: self.check_answer(3))
-        
-        self.submit_button = ttk.Button(root, text='Invia', style='danger.TButton', command=self.check_answer, state=tk.DISABLED)
-
+                
         self.next_button = ttk.Button(root, text='Prossima domanda', style='success.TButton', command=self.next_question, state=tk.DISABLED)
 
-        self.score_label = tk.Label(self.root, text="Punteggio: 0/0", font=('Arial', 14))
+        self.score_label = tk.Label(self.root, text="Punteggio: 0/0", font=('Arial', 18))
  
         self.show_answers_button = tk.Button(self.root, text="Mostra risposte", command=self.show_answers)
         
@@ -57,9 +55,9 @@ class QuizApp:
 
         self.edit_category_button = ttk.Button(root, text='Modifica Categoria', style='info.TButton', command=self.open_edit_category_window)
 
-        self.add_quiz_button = ttk.Button(root, text='  Aggiungi Quiz  ', style='info.TButton', command=self.open_add_quiz_window)
+        self.add_quiz_button = ttk.Button(root, text='   Aggiungi Quiz  ', style='info.TButton', command=self.open_add_quiz_window)
 
-        self.edit_quiz_button = ttk.Button(root, text='  Modifica Quiz  ', style='info.TButton', command=self.open_edit_quiz_window)
+        self.edit_quiz_button = ttk.Button(root, text='   Modifica Quiz  ', style='info.TButton', command=self.open_edit_quiz_window)
 
         self.category_listbox.bind('<<ListboxSelect>>', self.load_quiz)
 
@@ -69,20 +67,25 @@ class QuizApp:
 
 
     def create_layout(self):
-        self.add_category_button.grid(row=0, column=0, pady=10, padx=10)
-        self.edit_category_button.grid(row=1, column=0, pady=10, padx=10)
-        self.category_listbox.grid(row=0, column=1, rowspan=4, pady=10, padx=10, sticky='nsew')
-        self.category_scrollbar.grid(row=0, column=2, rowspan=4, pady=10, sticky='ns')
-        self.add_quiz_button.grid(row=0, column=3, pady=10, padx=10)
-        self.edit_quiz_button.grid(row=1, column=3, pady=10, padx=10)
+            # Configura le colonne per avere lo stesso peso
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
+        self.root.grid_columnconfigure(2, weight=1)
+        self.root.grid_columnconfigure(3, weight=1)
+        
+        self.add_category_button.grid(row=0, column=0, pady=10, padx=10, sticky='nsew')
+        self.edit_category_button.grid(row=1, column=0, pady=10, padx=10, sticky='nsew')
+        self.category_listbox.grid(row=0, column=1, rowspan=4, pady=10, padx=10, sticky='nse')
+        self.category_scrollbar.grid(row=0, column=2, rowspan=4, pady=10, sticky='nsw')
+        self.add_quiz_button.grid(row=0, column=3, pady=10, padx=10, sticky='nsew')
+        self.edit_quiz_button.grid(row=1, column=3, pady=10, padx=10, sticky='nsew')
 
-        self.switch_mode_button.grid(row=4, column=0, columnspan=4, pady=10)
+        self.switch_mode_button.grid(row=4, column=0, columnspan=4, pady=10, sticky='ns')
         self.question_label.grid(row=5, column=0, columnspan=4, pady=10)
-        # self.answer_entry.grid(row=6, column=0, columnspan=4, pady=10)
-        self.show_answers_button.grid(row=6, column=0, columnspan=4, pady=10)        
-        # self.submit_button.grid(row=8, column=0, columnspan=4)
+        self.show_answers_button.grid(row=6, column=0, columnspan=4, pady=10, sticky='ns')        
         # self.next_button.grid(row=8, column=0, columnspan=4, pady=10)
-        self.score_label.grid(row=9, column=0, columnspan=4)
+        self.score_label.grid(row=9, column=0, columnspan=4, sticky='nsew')
+
 
 
     def load_quiz_data(self):
@@ -304,8 +307,6 @@ class QuizApp:
                 else:
                     self.question_label['text'] = f"Quale romaji rappresenta questo significato: {next_quiz['meaning']}{question_type}?"
                 
-            self.next_button['state'] = tk.DISABLED
-            self.submit_button['state'] = tk.NORMAL
 
     def show_answers(self):
         self.option1_button.grid(row=7, column=0, pady=20)
@@ -534,7 +535,7 @@ if __name__ == "__main__":
     root = tk.Tk()
     style = Style(theme="cyborg")
     # Imposta la larghezza fissa e l'altezza variabile
-    #root.minsize(width=800, height=0)
-    #root.maxsize(width=800, height=2000)  # Puoi impostare un'altezza massima a tuo piacimento
+    root.minsize(width=1500, height=0)
+    root.maxsize(width=1500, height=2000)  # Puoi impostare un'altezza massima a tuo piacimento
     QuizApp(root)
     root.mainloop()
