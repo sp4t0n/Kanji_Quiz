@@ -79,11 +79,9 @@ class QuizApp:
         self.switch_mode_button.grid(row=4, column=0, columnspan=4, pady=10)
         self.question_label.grid(row=5, column=0, columnspan=4, pady=10)
         # self.answer_entry.grid(row=6, column=0, columnspan=4, pady=10)
-        self.show_answers_button.grid(row=6, column=0, columnspan=4, pady=10)
-        
-
-        self.submit_button.grid(row=8, column=0, columnspan=4)
-        #self.next_button.grid(row=8, column=0, columnspan=4, pady=10)
+        self.show_answers_button.grid(row=6, column=0, columnspan=4, pady=10)        
+        # self.submit_button.grid(row=8, column=0, columnspan=4)
+        # self.next_button.grid(row=8, column=0, columnspan=4, pady=10)
         self.score_label.grid(row=9, column=0, columnspan=4)
 
 
@@ -108,26 +106,52 @@ class QuizApp:
             else:
                 wb = load_workbook(DATA_FILE)
                 ws = wb.active
+
+                all_quizzes = []
+
                 for row in ws.iter_rows(min_row=2):
                     kanji, romaji, meaning, category, quiz_type = (row[0].value, row[1].value, row[2].value, row[3].value, row[4].value)
                     if quiz_type:
                         quiz_type = quiz_type.lower()
-                        row[4].value = quiz_type  # Aggiorna il valore nel file Excel
                     if not category or category == "Categoria":
                         category = "Generale"
-                    if category not in self.quiz_data:
-                        self.quiz_data[category] = []
-                        self.quiz_categories.append(category)
-                    if romaji or meaning:
-                        self.quiz_data[category].append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category, 'type': quiz_type})
+                    all_quizzes.append({'kanji': kanji, 'romaji': romaji, 'meaning': meaning, 'category': category, 'type': quiz_type})
+
+                # Ordina i quiz in base alla categoria
+                all_quizzes.sort(key=lambda x: x['category'])
+
+                # Cancella tutte le righe esistenti (a partire dalla seconda riga)
+                for row in ws.iter_rows(min_row=2, max_row=ws.max_row):
+                    for cell in row:
+                        cell.value = None
+
+                # Sovrascrivi le righe nel file Excel con i dati ordinati
+                for idx, quiz in enumerate(all_quizzes, start=2):
+                    ws.cell(row=idx, column=1, value=quiz['kanji'])
+                    ws.cell(row=idx, column=2, value=quiz['romaji'])
+                    ws.cell(row=idx, column=3, value=quiz['meaning'])
+                    ws.cell(row=idx, column=4, value=quiz['category'])
+                    ws.cell(row=idx, column=5, value=quiz['type'])
 
                 # Salva le modifiche nel file Excel
                 wb.save(DATA_FILE)
+
+                # Popola il dizionario self.quiz_data con i dati ordinati
+                self.quiz_data = {}
+                for quiz in all_quizzes:
+                    category = quiz['category']
+                    if category not in self.quiz_data:
+                        self.quiz_data[category] = []
+                    self.quiz_data[category].append(quiz)
+
+                # Aggiorna la lista delle categorie
+                self.quiz_categories = list(self.quiz_data.keys())
 
                 # Aggiorna la variabile della categoria
                 self.category_var.set(self.quiz_categories)                
         except Exception as e:
             messagebox.showerror('Errore', f"Errore durante il caricamento dei dati del quiz: {str(e)}")
+
 
 
     def save_quiz_data(self):
@@ -140,22 +164,31 @@ class QuizApp:
                 # Se non esiste, crea un nuovo foglio di lavoro
                 wb = Workbook()
 
+            # Usa un foglio chiamato "QuizData" o creane uno se non esiste
+            if "QuizData" in wb.sheetnames:
+                ws = wb["QuizData"]
+            else:
+                ws = wb.create_sheet(title="QuizData")
+
+            # Aggiungi l'intestazione delle colonne solo se il foglio è vuoto
+            if ws.max_row == 1:
+                ws.append(['Kanji', 'Romaji', 'Significato', 'Categoria', 'Tipo'])
+
+            # Sovrascrivi le righe con i nuovi dati del quiz
+            row_num = 2  # Inizia dalla seconda riga poiché la prima riga ha l'intestazione
             for category, quizzes in self.quiz_data.items():
-                if category in wb.sheetnames:
-                    # se il foglio esiste già nel foglio di lavoro, usalo
-                    ws = wb[category]
-                else:
-                    # se il foglio non esiste nel foglio di lavoro, crealo
-                    ws = wb.create_sheet(title=category)
-
-                # Cancella le righe esistenti nel foglio di lavoro
-                for row in ws.iter_rows(min_row=ws.min_row, max_col=ws.max_column, max_row=ws.max_row):
-                    for cell in row:
-                        cell.value = None
-
-                # Aggiungi nuove righe
                 for quiz in quizzes:
-                    ws.append([quiz['kanji'], quiz['romaji'], quiz['meaning'], quiz['category'], quiz['type']])
+                    # Se la categoria è vuota o non definita, assegna "Generale"
+                    if not category:
+                        category = "Generale"
+                    for col_num, value in enumerate([quiz['kanji'], quiz['romaji'], quiz['meaning'], category, quiz['type']], start=1):
+                        ws.cell(row=row_num, column=col_num, value=value)
+                    row_num += 1
+
+            # Cancella le righe in eccesso, se presenti
+            for row in ws.iter_rows(min_row=row_num, max_col=5, max_row=ws.max_row):
+                for cell in row:
+                    cell.value = None
 
             wb.save(DATA_FILE)
 
@@ -352,14 +385,23 @@ class QuizApp:
         new_category_name = simpledialog.askstring("Modifica Categoria", f"Modifica il nome della categoria '{old_category_name}':")
         if new_category_name:
             if new_category_name not in self.quiz_categories:
+                # Rinomina la chiave nel dizionario
+                self.quiz_data[new_category_name] = self.quiz_data.pop(old_category_name)
+
+                # Aggiorna e ordina la lista self.quiz_categories
                 self.quiz_categories[category_index] = new_category_name
-                self.category_listbox.delete(category_index)
-                self.category_listbox.insert(category_index, new_category_name)
-                self.quiz_data[new_category_name] = self.quiz_data.pop(old_category_name)  # Rinomina la chiave nel dizionario
-                self.quiz_categories = list(self.quiz_data.keys())
+                self.quiz_categories.sort()
+
+                # Aggiorna il category_listbox per riflettere l'ordine alfabetico
+                self.category_listbox.delete(0, 'end')
+                for category in self.quiz_categories:
+                    self.category_listbox.insert('end', category)
+
+                # Salva i dati del quiz
                 self.save_quiz_data()
             else:
                 messagebox.showerror('Errore', 'La categoria esiste già.')
+
 
 
     def open_edit_quiz_window(self):
@@ -491,5 +533,8 @@ class QuizApp:
 if __name__ == "__main__":
     root = tk.Tk()
     style = Style(theme="cyborg")
+    # Imposta la larghezza fissa e l'altezza variabile
+    #root.minsize(width=800, height=0)
+    #root.maxsize(width=800, height=2000)  # Puoi impostare un'altezza massima a tuo piacimento
     QuizApp(root)
     root.mainloop()
