@@ -25,4 +25,4 @@
    python KanjiQuiz.py
 ## 📜 Licenza
 
-Questo progetto è rilasciato sotto la licenza MIT. Puoi leggere i dettagli nel file [LICENSE](https://github.com/sp4t0n/Kanji_Quiz/blob/main/LICENSE).
+Questo progetto è rilasciato sotto la licenza GNU. Puoi leggere i dettagli nel file [LICENSE](https://github.com/sp4t0n/Kanji_Quiz/blob/main/LICENSE).
